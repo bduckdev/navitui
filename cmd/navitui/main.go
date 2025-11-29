@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"navitui/internal/ui"
-
-	tea "github.com/charmbracelet/bubbletea"
+	"navitui/internal/navidrome"
+	"navitui/internal/tui"
 )
 
 func main() {
@@ -22,12 +21,6 @@ func run(args []string) int {
 	return 0
 }
 
-func runTUI() error {
-	p := tea.NewProgram(ui.InitialModel())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Alas, there's been an error: %v", err)
-		return err
-	}
-
-	return nil
+func runTUI() {
+	tui.Run(navidrome.Tracks)
 }
