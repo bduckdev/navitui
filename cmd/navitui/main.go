@@ -1,26 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
-	"navitui/internal/navidrome"
-	"navitui/internal/tui"
+	"navitui/internal/app"
 )
 
 func main() {
-	os.Exit(run(os.Args))
-}
-
-func run(args []string) int {
-	if len(args) < 2 {
-		runTUI()
-		return 0
+	err := app.Init()
+	if err != nil {
+		log.Fatalf("Failed to initialize navitui: %v", err)
 	}
-	fmt.Printf("nice command bro\n")
-	return 0
-}
 
-func runTUI() {
-	tui.Run(navidrome.Tracks)
+	os.Exit(0)
 }
