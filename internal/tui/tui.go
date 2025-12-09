@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"fmt"
 	"math"
 	"os"
+	"sort"
 	"time"
 
 	"navitui/internal/mpv"
@@ -237,21 +239,45 @@ func newModel(songs []navidrome.Song, op onPlayFunc, np getPlayerStatus) model {
 	return m
 }
 
-// use lithammer/fuzzy to find songs based on any attribute of the track. case-insensitive.
-func matchTrack(t navidrome.Song, q string) bool {
-	return fuzzy.MatchFold(q, t.Title) || fuzzy.MatchFold(q, t.Album) || fuzzy.MatchFold(q, t.Artist) || fuzzy.MatchFold(q, t.Genre)
+// build filtered song list by using ranked match
+func buildFilteredSongs(songs []navidrome.Song, query string) []navidrome.Song {
+	if query == "" {
+		return songs
+	}
+	targets := make([]string, len(songs)*3)
+	for i, s := range songs {
+		targets[i] = fmt.Sprintf("%s %s %s %s %s", s.Title, s.Album, s.Artist, s.Title, s.Artist)
+	}
+
+	ranks := fuzzy.RankFindNormalizedFold(query, targets)
+	sort.Sort(ranks)
+
+	const maxDistance = 1
+	const maxResults = 100
+
+	filteredSongs := make([]navidrome.Song, 0, maxResults)
+
+	for _, r := range ranks {
+		if r.Distance < maxDistance {
+			break
+		}
+
+		filteredSongs = append(filteredSongs, songs[r.OriginalIndex])
+
+		if len(filteredSongs) >= maxResults {
+			break
+		}
+	}
+
+	// return songs
+	return filteredSongs
 }
 
 // build table based on query
 func (m *model) buildTable(columns []table.Column) {
 	query := m.search.Value()
 
-	m.filteredSongs = m.filteredSongs[:0]
-	for _, t := range m.allSongs {
-		if query == "" || matchTrack(t, query) {
-			m.filteredSongs = append(m.filteredSongs, t)
-		}
-	}
+	m.filteredSongs = buildFilteredSongs(m.allSongs, query)
 
 	rows := make([]table.Row, len(m.filteredSongs))
 	for i, t := range m.filteredSongs {
